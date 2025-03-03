@@ -1,4 +1,4 @@
-# Use an official Node.js runtime as a parent image
+# Use an official Node.js image
 FROM node:18
 
 # Install LibreOffice
@@ -13,7 +13,7 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application files
+# Copy the entire project (including routes/)
 COPY . .
 
 # Expose the port
