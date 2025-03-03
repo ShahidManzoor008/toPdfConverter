@@ -7,7 +7,7 @@ export const uploadFiles = async (files) => {
   files.forEach((file) => formData.append("files", file));
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/convert`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/api/files/upload`, formData, {
       responseType: "blob",
       headers: { "Content-Type": "multipart/form-data" },
     });
