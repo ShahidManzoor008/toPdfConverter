@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { API_BASE_URL } from "./api.config";
+import { API_BASE_URL } from "./api.config.js";
 
 export const uploadFiles = async (files) => {
   const formData = new FormData();
