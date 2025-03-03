@@ -1,23 +1,25 @@
-# Use an official Node.js image
 FROM node:18
 
-# Install LibreOffice
-RUN apt-get update && apt-get install -y libreoffice
+# Install LibreOffice and any required system packages
+RUN apt-get update && \
+    apt-get install -y libreoffice && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy dependency manifests and install production dependencies
 COPY package*.json ./
+RUN npm install --production
 
-# Install dependencies
-RUN npm install
-
-# Copy the entire project (including routes/)
+# Copy the rest of your application code
 COPY . .
 
-# Expose the port
+# Ensure the uploads directory exists
+RUN mkdir -p uploads
+
+# Expose the port that your app listens on (adjust if using a different port)
 EXPOSE 10000
 
-# Start the server
-CMD ["npm", "start"]
+# Start the application
+CMD ["node", "index.js"]
