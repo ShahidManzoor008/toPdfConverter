@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // ✅ Use import.meta.env
+import { API_BASE_URL } from "./api.config";
 
 export const uploadFiles = async (files) => {
   const formData = new FormData();
