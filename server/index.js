@@ -19,8 +19,9 @@ const allowedOrigins = process.env.CORS_ORIGIN
   : ["*"];
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "https://topdfconverter.onrender.com",
     methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
     credentials: true,
   })
 );
