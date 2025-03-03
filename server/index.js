@@ -13,15 +13,26 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ✅ Load CORS Origins from .env
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["*"];
+
+// ✅ Configure CORS
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
+// ✅ Security Middleware
 app.use(helmet());
 app.use(express.json());
 
-// API Routes
+// ✅ API Routes
 app.use("/api/files", fileRoutes);
 
-// Start Server
+// ✅ Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });

@@ -2,12 +2,15 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
+require("dotenv").config();
+
+const libreOfficePath = process.env.LIBREOFFICE_PATH || "/usr/bin/soffice"; // Default path for LibreOffice
 
 // ✅ Convert a single file to PDF using LibreOffice
 const convertToPDF = (inputPath) => {
   return new Promise((resolve, reject) => {
     const outputDir = path.dirname(inputPath);
-    const command = `soffice --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+    const command = `${libreOfficePath} --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -17,9 +20,11 @@ const convertToPDF = (inputPath) => {
 
       console.log("📄 LibreOffice Output:", stdout);
 
-      // ✅ Dynamically find the generated PDF file
+      // ✅ Find the generated PDF file
       const files = fs.readdirSync(outputDir);
-      const pdfFile = files.find(file => file.endsWith(".pdf") && file.includes(path.basename(inputPath)));
+      const pdfFile = files.find(file =>
+        file.endsWith(".pdf") && file.includes(path.basename(inputPath, path.extname(inputPath)))
+      );
 
       if (!pdfFile) {
         console.error("❌ PDF file was not created.");
@@ -44,13 +49,21 @@ const processFileConversion = async (files) => {
   const convertedFiles = [];
 
   for (const file of files) {
-    const pdfPath = await convertToPDF(file.path);
-    convertedFiles.push({ original: file.originalname, converted: pdfPath, temp: file.path });
+    try {
+      const pdfPath = await convertToPDF(file.path);
+      convertedFiles.push({ original: file.originalname, converted: pdfPath, temp: file.path });
+    } catch (error) {
+      console.error(`❌ Error converting ${file.originalname}:`, error);
+    }
   }
 
   // ✅ If single file, return it directly
   if (convertedFiles.length === 1) {
-    return { type: "single", filePath: path.resolve(convertedFiles[0].converted), tempFiles: [convertedFiles[0].temp, convertedFiles[0].converted] };
+    return {
+      type: "single",
+      filePath: path.resolve(convertedFiles[0].converted),
+      tempFiles: [convertedFiles[0].temp, convertedFiles[0].converted]
+    };
   }
 
   // ✅ If multiple files, create ZIP
@@ -61,7 +74,11 @@ const processFileConversion = async (files) => {
   return new Promise((resolve, reject) => {
     output.on("close", () => {
       console.log("✅ ZIP Created:", zipPath);
-      resolve({ type: "zip", filePath: zipPath, tempFiles: [...convertedFiles.map(f => f.temp), ...convertedFiles.map(f => f.converted), zipPath] });
+      resolve({
+        type: "zip",
+        filePath: zipPath,
+        tempFiles: [...convertedFiles.map(f => f.temp), ...convertedFiles.map(f => f.converted), zipPath]
+      });
     });
 
     archive.on("error", (err) => {
@@ -79,8 +96,19 @@ const processFileConversion = async (files) => {
   });
 };
 
-// ✅ Export only the PDF conversion functions
+// ✅ Clean up temporary files
+const cleanupFiles = (files) => {
+  files.forEach((file) => {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      console.log(`🗑️ Deleted temp file: ${file}`);
+    }
+  });
+};
+
+// ✅ Export PDF conversion functions
 module.exports = {
   convertToPDF,
   processFileConversion,
+  cleanupFiles,
 };

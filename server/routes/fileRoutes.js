@@ -1,42 +1,38 @@
+// ============================
+// 📂 Server: index.js (Express API for File Conversion)
+// ============================
+
 const express = require("express");
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const { processFileConversion } = require("../controllers/pdfController");
+const cors = require("cors");
+const helmet = require("helmet");
+const dotenv = require("dotenv");
+const fileRoutes = require("./routes/fileRoutes");
 
-const router = express.Router();
-const upload = multer({ dest: "uploads/" });
+dotenv.config();
 
-// ✅ Convert Single/Multiple Files to PDF
-router.post("/convert", upload.array("files", 5), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: "No files uploaded!" });
-    }
+const app = express();
+const port = process.env.PORT || 5000;
 
-    const result = await processFileConversion(req.files);
-    const absoluteFilePath = path.resolve(result.filePath);
+// ✅ Load CORS Origins from .env
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["*"];
 
-    // ✅ Ensure file exists before sending
-    if (!fs.existsSync(absoluteFilePath)) {
-      return res.status(500).json({ error: "File not found after conversion." });
-    }
+// ✅ Configure CORS
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
 
-    res.download(absoluteFilePath, result.type === "single" ? "converted.pdf" : "converted_files.zip", (err) => {
-      if (err) console.error("❌ File Download Error:", err);
+// ✅ Security Middleware
+app.use(helmet());
+app.use(express.json());
 
-      // ✅ Cleanup temporary files after sending
-      result.tempFiles.forEach((file) => {
-        if (fs.existsSync(file)) fs.unlinkSync(file);
-      });
+// ✅ API Routes
+app.use("/api/files", fileRoutes);
 
-      console.log("🗑️ Temporary files deleted.");
-    });
-
-  } catch (error) {
-    console.error("❌ Conversion Error:", error);
-    res.status(500).json({ error: "File conversion failed." });
-  }
+// ✅ Start Server
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
 });
-
-module.exports = router;
